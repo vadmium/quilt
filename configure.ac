@@ -61,7 +61,7 @@ if test `$BASH -c "echo \"\\\$(set -- \\\$'a b'; echo \\\$#)\"" 2>/dev/null` = "
 	AC_MSG_RESULT(yes)
 else
 	AC_MSG_RESULT(no)
-	AC_MSG_ERROR([
+	AC_MSG_WARN([
 You have a version of `bash' which suffers from a quoting bug.
 This is a known bug of bash 3.1, which was fixed by patch bash31-011.
 You can get this patch at ftp://ftp.gnu.org/gnu/bash/
