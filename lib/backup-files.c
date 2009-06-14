@@ -42,6 +42,13 @@
 #include <string.h>
 #include <dirent.h>
 
+#ifdef _WIN32
+# include <io.h>
+# define BINARY_MODE(fd) setmode(fd, O_BINARY)
+#else
+# define BINARY_MODE(fd) /* nothing */
+#endif
+
 #if !defined(HAVE_MKSTEMP) && defined(HAVE_MKTEMP)
 # define mkstemp(x) creat(mktemp(x), 0600)
 #endif
@@ -162,6 +169,9 @@ copy_fd(int from_fd, int to_fd)
 	char *wbuf;
 	ssize_t len, l;
 
+	BINARY_MODE(from_fd);
+	BINARY_MODE(to_fd);
+	
 	for ( ;; ) {
 		len = read(from_fd, buffer, sizeof(buffer));
 		if (len == 0)
@@ -318,6 +328,7 @@ process_file(const char *file)
 				perror(backup);
 				goto fail;
 			}
+			BINARY_MODE(fd);
 			close(fd);
 		} else {
 			if (!opt_silent)
