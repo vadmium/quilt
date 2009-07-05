@@ -16,17 +16,25 @@ AC_DEFUN([QUILT_COMPAT_PROG_PATH],[
     fi
     if test x"$withval" != xno; then
       AC_MSG_CHECKING(for $2)
-      $1="$withval"
-      if test -e "$$1"; then
+      
+      if test "$withval" = yes; then
+        $1="$2"
+      else
+        $1="$withval"
+      fi
+      
+      if test "$$1" != "$2" -a -e "$$1"; then
 	if test ! -f "$$1" -a ! -h "$$1" || test ! -x "$$1"; then
 	  AC_MSG_ERROR([$$1 is not an executable file])
 	fi
       fi
       AC_MSG_RESULT([$$1])
-      if test ! -e "$$1"; then
-        AC_MSG_WARN([$$1 does not exist])
+      if test "$$1" != "$2"; then
+        if test ! -e "$$1"; then
+          AC_MSG_WARN([$$1 does not exist])
+        fi
+        COMPAT_SYMLINKS="$COMPAT_SYMLINKS $2"
       fi
-      COMPAT_SYMLINKS="$COMPAT_SYMLINKS $2"
     fi
   ],[
     m4_if([$3],[],[
