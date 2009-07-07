@@ -970,10 +970,10 @@ quilt_command()
 }
 
 #
-# If the working directory does not contain a $QUILT_PATCHES directory,
-# quilt searches for its base directory up the directory tree. If no
-# $QUILT_PATCHES directory exists, the quilt operations that create
-# patches will create $QUILT_PATCHES in the current working directory.
+# Search for a base directory up the directory tree. The base directory must
+# contain the $QUILT_PATCHES or $QUILT_PC directories. If no such base
+# directory is found, the $QUILT_PATCHES and $QUILT_PC directories will be
+# created in the current working directory.
 #
 # When quilt is invoked from a directory below the base directory, it
 # changes into the base directory, and sets $SUBDIR to the relative
@@ -983,14 +983,14 @@ quilt_command()
 # drivers/net/.
 
 unset SUBDIR SUBDIR_DOWN
-if ! [ -d "$QUILT_PATCHES" ]
+if ! [ -d "$QUILT_PC" -o -d "$QUILT_PATCHES" ]
 then
     basedir=$PWD
     while [ -n "$basedir" ]
     do
 	basedir=${basedir%/*}
 	down=$down../
-	if [ -d "$basedir/$QUILT_PATCHES" ]
+	if [ -d "$basedir/$QUILT_PC" -o -d "$basedir/$QUILT_PATCHES" ]
 	then
 	    SUBDIR="${PWD#$basedir/}/"
 	    SUBDIR_DOWN=$down
