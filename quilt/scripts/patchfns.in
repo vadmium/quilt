@@ -32,16 +32,17 @@ fi
 unset CDPATH
 shopt -s dotglob
 
-if [ -e "$QUILTRC" ]
+if [ -z "${QUILTRC+set}" ]
 then
-	source "$QUILTRC"
-fi
-
-# Add default arguments for this command
-if [ -n "$QUILT_COMMAND" ]; then
-	args="QUILT_$(echo $QUILT_COMMAND | tr a-z A-Z)_ARGS"
-	eval set -- ${!args} \"\$@\"
-	unset args
+	if [ -e "/etc/quilt.quiltrc" ]
+	then
+		source "/etc/quilt.quiltrc"
+	fi
+	
+	if [ -e "$HOME/.quiltrc" ]
+	then
+		source "$HOME/.quiltrc"
+	fi
 fi
 
 # ========================================================
@@ -1003,6 +1004,19 @@ then
 	fi
     done
     unset basedir down
+fi
+
+: "${QUILTRC=$QUILT_PC/quiltrc}"
+if [ -e "$QUILTRC" ]
+then
+	source "$QUILTRC"
+fi
+
+# Add default arguments for this command
+if [ -n "$QUILT_COMMAND" ]; then
+	args="QUILT_$(echo $QUILT_COMMAND | tr a-z A-Z)_ARGS"
+	eval set -- ${!args} \"\$@\"
+	unset args
 fi
 
 : ${QUILT_SERIES:=series}
