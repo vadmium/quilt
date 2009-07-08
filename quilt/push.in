@@ -268,7 +268,7 @@ list_patches()
 	fi
 }
 
-options=`getopt -o fqvah --long leave-rejects,color:: -- "$@"`
+options=`getopt -o fqvah --long leave-rejects,color::,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -292,7 +292,7 @@ do
 	-a)
 		opt_all=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--leave-rejects)
 		opt_leave_rejects=1

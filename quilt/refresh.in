@@ -89,7 +89,8 @@ die()
 
 options=`getopt -o p:uU:cC:fz::h --long no-timestamps,diffstat,backup,sort \
 				 --long no-index \
-				 --long strip-trailing-whitespace -- "$@"`
+				 --long strip-trailing-whitespace,help -- \
+				 "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -118,7 +119,7 @@ do
 		opt_fork=1
 		opt_new_name=$2
 		shift 2 ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--no-timestamps)
 		QUILT_NO_DIFF_TIMESTAMPS=1

@@ -43,7 +43,7 @@ topmost patch can be removed right now.)
 	fi
 }
 
-options=`getopt -o nrh --long backup -- "$@"`
+options=`getopt -o nrh --long backup,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -61,7 +61,7 @@ do
 	-r)
 		opt_remove=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--backup)
 		QUILT_BACKUP=1

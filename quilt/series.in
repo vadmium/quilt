@@ -45,7 +45,7 @@ cat_patches()
 	done
 }
 
-options=`getopt -o vh -- "$@"`
+options=`getopt -o vh --long help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -60,7 +60,7 @@ do
 	-v)
 		opt_verbose=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift
