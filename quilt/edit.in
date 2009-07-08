@@ -34,7 +34,7 @@ the topmost patch.
 	fi
 }
 
-options=`getopt -o h -- "$@"`
+options=`getopt -o h --long help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -46,7 +46,7 @@ eval set -- "$options"
 while true
 do
 	case "$1" in
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift

@@ -32,7 +32,7 @@ specified patch in the file series.
 	fi
 }
 
-options=`getopt -o nh -- "$@"`
+options=`getopt -o nh --long help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -44,7 +44,7 @@ eval set -- "$options"
 while true
 do
 	case "$1" in
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift
