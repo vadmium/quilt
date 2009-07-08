@@ -96,7 +96,7 @@ die()
 	exit $status
 }
 
-options=`getopt -o P:d:fp:Rh -- "$@"`
+options=`getopt -o P:d:fp:Rh --long help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -126,7 +126,7 @@ do
 	-f)
 		opt_force=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift

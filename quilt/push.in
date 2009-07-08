@@ -275,7 +275,7 @@ list_patches()
 	fi
 }
 
-options=`getopt -o fqvam::h --long fuzz:,merge::,leave-rejects,color:: -- "$@"`
+options=`getopt -o fqvam::h --long fuzz:,merge::,leave-rejects,color::,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -299,7 +299,7 @@ do
 	-a)
 		opt_all=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h
 		;;
 	--fuzz)

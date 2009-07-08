@@ -163,7 +163,7 @@ remove_patch()
 	return $status
 }
 
-options=`getopt -o fRqvah -- "$@"`
+options=`getopt -o fRqvah --long help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -192,7 +192,7 @@ do
 	-a)
 		opt_all=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift

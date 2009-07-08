@@ -68,7 +68,8 @@ maybe_strip_diffstat()
 	fi
 }
 
-options=`getopt -o areh --long backup,strip-trailing-whitespace,strip-diffstat -- "$@"`
+options=`getopt -o areh --long backup,strip-trailing-whitespace \
+	--long strip-diffstat,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -98,7 +99,7 @@ do
 	--strip-trailing-whitespace)
 		opt_strip_trailing_whitespace=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift

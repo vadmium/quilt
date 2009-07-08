@@ -45,7 +45,7 @@ in the directory tree.
 	fi
 }
 
-options=`getopt -o p:h -- "$@"`
+options=`getopt -o p:h --long help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -59,7 +59,7 @@ do
 	case "$1" in
 	-p)	opt_strip_level=$2
 		shift 2 ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift

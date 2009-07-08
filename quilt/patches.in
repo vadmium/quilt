@@ -112,7 +112,7 @@ scan_unapplied()
 	done
 }
 
-options=`getopt -o vh --long color:: -- "$@"`
+options=`getopt -o vh --long color::,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -140,7 +140,7 @@ do
 			usage ;;
 		esac
 		shift 2 ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift

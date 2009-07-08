@@ -60,7 +60,7 @@ in_valid_dir()
 	done
 }
 
-options=`getopt -o P:h -- "$@"`
+options=`getopt -o P:h --long help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -75,7 +75,7 @@ do
 	-P)
 		opt_patch="$2"
 		shift 2 ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift

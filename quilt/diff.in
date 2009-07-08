@@ -139,7 +139,7 @@ die()
 
 options=`getopt -o p:P:RuU:cC:zh --long diff:,snapshot,no-timestamps \
 				 --long no-index,combine:,color:: \
-				 --long sort -- "$@"`
+				 --long sort,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -179,7 +179,7 @@ do
 	-U|-C)
 		opt_format="$1 $2"
 		shift 2 ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--snapshot)
 		opt_snapshot=1
