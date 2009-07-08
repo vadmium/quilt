@@ -57,7 +57,7 @@ patch.
 	fi
 }
 
-options=`getopt -o T:h --long all,reduce,lines::,edge-labels: -- "$@"`
+options=`getopt -o T:h --long all,reduce,lines::,edge-labels:,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -95,7 +95,7 @@ do
 		opt_edge_labels=$2
 		shift 2 ;;
 
-	-h)
+	-h|--help)
 		usage -h ;;
 
 	--)

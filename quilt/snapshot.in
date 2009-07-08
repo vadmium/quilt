@@ -36,7 +36,7 @@ snapshot can be generated with \`quilt diff --snapshot'.
 	fi
 }
 
-options=`getopt -o dh -- "$@"`
+options=`getopt -o dh --long help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -51,7 +51,7 @@ do
 	-d)
 		opt_remove=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift
