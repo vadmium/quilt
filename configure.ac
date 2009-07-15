@@ -103,6 +103,12 @@ internal date.
 fi
 
 QUILT_COMPAT_PROG_PATH(PERL, perl, [perl perl5])
+case "$PERL" in
+perl) PERL_SHEBANG="/usr/bin/env $PERL";;
+*) PERL_SHEBANG="$PERL";;
+esac
+AC_SUBST(PERL_SHEBANG)
+
 QUILT_COMPAT_PROG_PATH(GREP, grep)
 
 AC_MSG_CHECKING([whether $GREP -q works])
