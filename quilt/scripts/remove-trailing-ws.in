@@ -1,4 +1,5 @@
-#! @PERL@ -w
+#! @PERL_SHEBANG@
+use warnings;
 
 # Remove trailing whitespace from modified lines in working files.
 #

@@ -21,7 +21,7 @@ COLUMN :=	@COLUMN@
 GETOPT :=	@GETOPT@
 CP :=		@CP@
 DATE :=		@DATE@
-PERL :=		@PERL@
+PERL_SHEBANG := @PERL_SHEBANG@
 BASH :=		@BASH@
 BASH_SHEBANG := @BASH_SHEBANG@
 GREP :=		@GREP@
@@ -177,7 +177,8 @@ po/quilt.pot: $(filter-out debian/control.in doc/quilt.1.in		\
 	for file in $+ ; do						\
 	  if test -n "`$(SED) -ne '1{ /@BASH_SHEBANG''@/p }' $$file`"; then \
 	    $(BASH) --dump-po-strings $$file ;				\
-	  elif test -n "`$(SED) -ne '1{ /@PERL''@/p }' $$file`"; then	\
+	  elif test -n "`$(SED) -ne '1{ /@PERL_SHEBANG''@/p }' $$file`"; \
+	  then \
 	    $(XGETTEXT) --from-code=UTF-8 --omit-header --language=Perl	\
 			--keyword=_ -o - $$file;			\
 	  else								\
@@ -261,7 +262,7 @@ $(patsubst %.in,%,$(wildcard bin/*.in quilt/*.in quilt/scripts/*.in)) :: Makefil
 	@echo "$< -> $@" >&2
 	@$(SED) -e 's:@QUILT_LIB''@:$(libdir)/$(PACKAGE):g'		\
 		-e 's:@QUILT_DIR''@:$(datadir)/$(PACKAGE):g'		\
-		-e 's:@PERL''@:$(PERL):g'				\
+		-e 's:@PERL_SHEBANG''@:$(PERL_SHEBANG):g' \
 		-e 's:@BASH_SHEBANG''@:$(BASH_SHEBANG):g' \
 		-e 's:@PATCH''@:$(PATCH):g'				\
 		-e 's:@VERSION''@:$(VERSION):g'				\
