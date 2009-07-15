@@ -41,6 +41,11 @@ dnl Check for Bourne-Again Shell
 unset BASH  # bash sets this itself!
 
 QUILT_COMPAT_PROG_PATH(BASH, bash)
+case "$BASH" in
+bash) BASH_SHEBANG="/usr/bin/env $BASH";;
+*) BASH_SHEBANG="$BASH";;
+esac
+AC_SUBST(BASH_SHEBANG)
 
 # It would be nice not to have to use backticks, but too many retarded sh
 # implementations still don't support $( )
