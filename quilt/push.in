@@ -36,8 +36,7 @@ be used.
 
 -q	Quiet operation.
 
--f	Force apply, even if the patch has rejects. Unless in quiet mode,
-	apply the patch interactively: the patch utility may ask questions.
+-f	Force apply, even if the patch has rejects.
 
 -v	Verbose operation.
 
@@ -115,19 +114,19 @@ apply_patch()
 		| patch $QUILT_PATCH_OPTS $(push_patch_args $patch) \
 			--backup --prefix="$QUILT_PC/$patch/" \
 			$no_reject_files \
-			-E $silent $force_apply 2>&1
+			-E $silent -f 2>&1
 	elif [ "${patch_file:(-4)}" = ".bz2" ]
 	then
 		bzip2 -cd $patch_file \
 		| patch $QUILT_PATCH_OPTS $(push_patch_args $patch) \
 			--backup --prefix="$QUILT_PC/$patch/" \
 			$no_reject_files \
-			-E $silent $force_apply 2>&1
+			-E $silent -f 2>&1
 	else
 		patch $QUILT_PATCH_OPTS $(push_patch_args $patch) \
 		      --backup --prefix="$QUILT_PC/$patch/" \
 		      $no_reject_files \
-		      -E $silent $force_apply -i $patch_file 2>&1
+		      -E $silent -f -i $patch_file 2>&1
 	fi
 }
 
@@ -337,7 +336,6 @@ stop_at_patch=$(find_unapplied_patch "$stop_at_patch") || exit 1
 
 [ -n "$opt_quiet" ] && silent=-s
 [ -z "$opt_verbose" ] && silent_unless_verbose=-s
-[ -z "$opt_force" -o -n "$opt_quiet" ] && force_apply=-f
 [ -n "$opt_force" ] && opt_leave_rejects=1
 
 top=$(top_patch)
