@@ -19,7 +19,7 @@ fi
 
 usage()
 {
-	printf $"Usage: quilt refresh [-p n|-p ab] [-u|-U num|-c|-C num] [-z[new_name]] [-f] [--no-timestamps] [--no-index] [--diffstat] [--sort] [--backup] [--strip-trailing-whitespace] [patch]\n"
+	printf $"Usage: quilt refresh [-p n|-p ab] [-u|-U num|-c|-C num] [-z[new_name]] [-f] [--no-timestamps] [--no-index] [--diffstat] [--sort] [--backup] [patch]\n"
 
 	if [ x$1 = x-h ]
 	then
@@ -68,9 +68,6 @@ patch.
 	Create a backup copy of the old version of a patch as patch~.
 
 --sort	Sort files by their name instead of preserving the original order.
-
---strip-trailing-whitespace
-	Strip trailing whitespace at the end of lines.
 "
 		exit 0
 	else
@@ -89,7 +86,7 @@ die()
 
 options=`getopt -o p:uU:cC:fz::h --long no-timestamps,diffstat,backup,sort \
 				 --long no-index \
-				 --long strip-trailing-whitespace,help -- \
+				 --long help -- \
 				 "$@"`
 
 if [ $? -ne 0 ]
@@ -135,9 +132,6 @@ do
 		shift ;;
 	--sort)
 		opt_sort=1
-		shift ;;
-	--strip-trailing-whitespace)
-		opt_strip_whitespace=1
 		shift ;;
 	--)
 		shift
@@ -235,11 +229,6 @@ do
 		printf $"More recent patches modify files in patch %s. Enforce refresh with -f.\n" "$(print_patch $patch)" >&2
 		die 1
 	fi
-
-	if [ -n "$files_were_shadowed" -a -n "$opt_strip_whitespace" ]
-	then
-		printf $"Cannot use --strip-trailing-whitespace on a patch that has shadowed files.\n" >&2
-	fi
 done >> $tmp_patch
 
 if ! [ -s $tmp_patch ]
@@ -247,22 +236,6 @@ then
 	printf $"Nothing in patch %s\n" "$(print_patch $patch)" >&2
 	die 1
 fi
-
-# Check for trailing whitespace
-if [ -z "$opt_strip_whitespace" ]
-then
-	$QUILT_DIR/scripts/remove-trailing-ws -n -p$num_strip_level \
-	< $tmp_patch
-else
-	tmp_patch2=$(gen_tempfile)
-	if $QUILT_DIR/scripts/remove-trailing-ws -p$num_strip_level \
-				       < $tmp_patch > $tmp_patch2
-	then
-		rm -f $tmp_patch
-		tmp_patch=$tmp_patch2
-	fi
-fi
-# FIXME: no stripping of non-topmost patch !!!
 
 patch_file=$(patch_file_name $patch)
 
