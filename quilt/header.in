@@ -21,7 +21,7 @@ fi
 
 usage()
 {
-	printf $"Usage: quilt header [-a|-r|-e] [--backup] [--strip-diffstat] [--strip-trailing-whitespace] [patch]\n"
+	printf $"Usage: quilt header [-a|-r|-e] [--backup] [--strip-diffstat] [patch]\n"
 
 	if [ x$1 = x-h ]
 	then
@@ -36,25 +36,12 @@ Print or change the header of the topmost or specified patch.
 --strip-diffstat
 	Strip diffstat output from the header.
 
---strip-trailing-whitespace
-	Strip trailing whitespace at the end of lines of the header.
-
 --backup
 	Create a backup copy of the old version of a patch as patch~.
 " "$EDITOR"
 		exit 0
 	else
 		exit 1
-	fi
-}
-
-maybe_strip_trailing_whitespace()
-{
-	if [ -n "$opt_strip_trailing_whitespace" ]
-	then
-		sed -e 's:[ '$'\t'']*$::'
-	else
-		cat
 	fi
 }
 
@@ -68,7 +55,7 @@ maybe_strip_diffstat()
 	fi
 }
 
-options=`getopt -o areh --long backup,strip-trailing-whitespace \
+options=`getopt -o areh --long backup \
 	--long strip-diffstat,help -- "$@"`
 
 if [ $? -ne 0 ]
@@ -95,9 +82,6 @@ do
 		shift ;;
 	--strip-diffstat)
 		opt_strip_diffstat=1
-		shift ;;
-	--strip-trailing-whitespace)
-		opt_strip_trailing_whitespace=1
 		shift ;;
 	-h|--help)
 		usage -h ;;
@@ -128,8 +112,7 @@ then
 
 	cat_file "$patch_file" \
 	| patch_header \
-	| maybe_strip_diffstat \
-	| maybe_strip_trailing_whitespace
+	| maybe_strip_diffstat
 else
 	patch_file_or_null=/dev/null
 	[ -e "$patch_file" ] && patch_file_or_null=$patch_file
@@ -153,8 +136,7 @@ else
 		LANG=$ORIGINAL_LANG $EDITOR "$tmp" || exit 1
 	fi
 
-	maybe_strip_diffstat < $tmp \
-	| maybe_strip_trailing_whitespace > $tmp2
+	maybe_strip_diffstat < $tmp > $tmp2
 
 	cat_file "$patch_file_or_null" | patch_body >> $tmp2 || exit 1
 

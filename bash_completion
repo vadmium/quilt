@@ -207,7 +207,7 @@ _quilt_completion()
 	   COMPREPLY=( ${COMPREPLY[@]:-} $( compgen -W "-h" -- $cur ) )
 	   ;;
 	header)
-	   COMPREPLY=( $( compgen -W "-a -e -h -r --backup --strip-diffstat --strip-trailing-whitespace $(quilt series)" -- $cur ) )
+	   COMPREPLY=( $( compgen -W "-a -e -h -r --backup --strip-diffstat $(quilt series)" -- $cur ) )
 	   ;;
 	import)
 	   case $prev in
@@ -249,7 +249,7 @@ _quilt_completion()
 	     -U|-C)
 		;;
 	     *)
-	     	COMPREPLY=( $( compgen -W "-p -u -U -c -C -f -h $(quilt applied) --no-timestamps --no-index --diffstat --sort --backup --strip-trailing-whitespace" -- $cur ) )
+	     	COMPREPLY=( $( compgen -W "-p -u -U -c -C -f -h $(quilt applied) --no-timestamps --no-index --diffstat --sort --backup" -- $cur ) )
 		;;
 	   esac
 	   ;;
