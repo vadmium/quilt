@@ -114,7 +114,3 @@ parse-patch {-s|-u} section file [< replacement]
 
 patchfns
 	A collection of functions.
-
-remove-trailing-ws
-	A utility to report trailing whitespace, and remove trailing
-	whitespace from files.
