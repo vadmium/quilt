@@ -912,6 +912,96 @@ apply_patch_temporarily()
 	fi
 }
 
+files_may_have_changed()
+{
+	local patch=$1 file
+	local patch_file=$(patch_file_name $patch)
+
+	if [ $? -ne 0 -o ! -e "$patch_file" \
+	     -o ! -e "$QUILT_PC/$patch/.timestamp" \
+	     -o "$QUILT_PC/$patch/.timestamp" -ot "$patch_file" ]
+	then
+		return 0
+	fi
+
+	for file in $(files_in_patch $patch)
+	do
+		[ "$QUILT_PC/$patch/.timestamp" -ot $file ] && return 0
+	done
+	return 1
+}
+
+# Check if all changes have been folded back into the patch (quilt refresh),
+# and report any pending changes.
+check_for_pending_changes()
+{
+	local patch="$1" properly="$2"
+	
+	if [ -e "$QUILT_PC/$patch~refresh" ]
+	then
+		printf $"Patch %s needs to be refreshed first.\n" \
+		       "$(print_patch $patch)" >&2
+		return 1
+	fi
+	
+	if [ -z "$properly" ] && ! files_may_have_changed "$patch"
+	then
+		return 0
+	fi
+	
+	local patch_file=$(patch_file_name $patch)
+	local workdir=$(gen_tempfile -d quilt) status=0
+
+	if [ -d $QUILT_PC/$patch ]
+	then
+		local prefix=$QUILT_PC/$patch/
+		[ ${prefix:0:1} == / ] || prefix=$PWD/$prefix
+		if ! ( cd $workdir && \
+		       $QUILT_LIB/backup-files -B $prefix -rks - )
+		then
+			printf $"Failed to copy files to temporary directory\n" >&2
+			rm -rf $workdir
+			return 1
+		fi
+	fi
+
+	if [ -s $patch_file ]
+	then
+		if ! cat_file $patch_file \
+		     | patch -d $workdir $QUILT_PATCH_OPTS \
+			     $(patch_args $patch) \
+			     --no-backup-if-mismatch -E \
+			     >/dev/null 2>/dev/null
+		then
+			if ! [ -e $QUILT_PC/$patch ]
+			then
+				printf $"Failed to patch temporary files\n" >&2
+				rm -rf $workdir
+				return 1
+			fi
+		fi
+	fi
+
+	local file failed
+	for file2 in $(files_in_patch $patch)
+	do
+		file=$workdir/$file2
+		[ -e $file  ] || file=/dev/null
+		[ -e $file2 ] || file2=/dev/null
+		diff -q $file $file2 > /dev/null || failed=1
+	done
+
+	if [ -n "$failed" ]
+	then
+		printf $"Patch %s does not remove cleanly (refresh it or enforce with -f)\n" \
+		       "$(print_patch $patch)" >&2
+		status=1
+	fi
+	rm -rf $workdir
+
+	return $status
+}
+
 next_filename()
 {
 	local patch=$1 base num
