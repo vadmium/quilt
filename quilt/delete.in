@@ -35,6 +35,12 @@ topmost patch can be removed right now.)
 --backup
 	Rename the patch file to patch~ rather than deleting it.
 	Ignored if not used with \`-r'.
+
+-f	Force remove even if the patch is applied and has unrefreshed
+	changes.
+
+-R	Always verify if the patch is refreshed; don't rely on timestamp
+	checks.
 "
 
 		exit 0
@@ -43,7 +49,9 @@ topmost patch can be removed right now.)
 	fi
 }
 
-options=`getopt -o nrh --long backup,help -- "$@"`
+unset opt_pop
+
+options=`getopt -o nrhfR --long backup,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -65,6 +73,9 @@ do
 		usage -h ;;
 	--backup)
 		QUILT_BACKUP=1
+		shift ;;
+	-f | -R)
+		opt_pop="${opt_pop+$opt_pop }$1"
 		shift ;;
 	--)
 		shift
@@ -103,7 +114,7 @@ if is_applied "$patch"; then
 		       "$(print_patch "$patch")" >&2
 		exit 1
 	fi
-	if ! quilt_command pop -fq
+	if ! quilt_command pop -q $opt_pop
 	then
 		exit 1
 	fi
