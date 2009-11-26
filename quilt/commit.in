@@ -1,0 +1,316 @@
+#! @BASH@
+
+#  This script is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  See the COPYING and AUTHORS files for more details.
+
+# Read in library functions
+if [ "$(type -t patch_file_name)" != function ]
+then
+	if ! [ -r $QUILT_DIR/scripts/patchfns ]
+	then
+		echo "Cannot read library $QUILT_DIR/scripts/patchfns" >&2
+		exit 1
+	fi
+	. $QUILT_DIR/scripts/patchfns
+fi
+
+setup_colors
+
+usage()
+{
+	printf $"Usage: quilt commit [-qv] [-s|--vcs={auto,svn,hg,git,null,forget}] [-A|--applied|from-patch [to-patch]]\n"
+	if [ x$1 = x-h ]
+	then
+		printf $"
+Commit patches to a version control system.  Without options, the
+current patch in the series file is applied, and then removed from the
+series.
+
+If neither [from-patch] nor [to-patch] is specified, commit the bottom
+patch on the stack.  If [from-patch] is specified, commit from the
+given patch to the current one.  If [to-patch] is specified, commit
+all patches from [from-patch] to [to-patch] inclusive.
+
+[from-patch] may be - for the first patch on the stack, or = for the
+current patch.  [to-patch] may be - for the last patch on the stack.
+
+-q	Quiet operation.
+
+-v	Verbose operation.
+
+-s, --vcs={auto,svn,hg,git,null,forget}
+	Use the given version control system. null and forget are
+	equivalent, and discard the patch from quilt, keeping the changes.
+
+-A, --applied
+	Commit all applied patches.  Equivalent to a range of - =
+"
+		exit 0
+	else
+		exit 1
+	fi
+}
+
+interrupt()
+{
+	rollback_patch $1
+	printf $"Interrupted by user; patch %s was not applied.\n" \
+	       "$(print_patch $patch)" >&2
+	exit 1
+}
+
+all_paths()
+{
+	# Read a list of files from stdin, and generate all paths leading
+	# up to those
+	while read path
+	do
+		while [ -n "$path" ]
+		do
+			echo $path
+			newpath=${path%/*}
+			if [ "$newpath" = "$path" ]
+			then
+				newpath=
+			fi
+			path="$newpath"
+		done
+	done
+}
+
+detect_vcs()
+{
+	# Determine the version control system in use in this source tree.
+	local found=0 vcs=""
+
+	if [ -d $QUILT_PC/../.svn ]
+	then
+		found=$(($found+1))
+		vcs="svn"
+	fi
+
+	if [ -d $QUILT_PC/../.git ]
+	then
+		found=$(($found+1))
+		vcs="git"
+	fi
+
+	if [ -d $QUILT_PC/../.hg ]
+	then
+		found=$(($found+1))
+		vcs="hg"
+	fi
+
+	if [ $found -gt 1 ]
+	then
+		echo "More than one VCS found: specify manually with --vcs" >&2
+		exit 1
+	fi
+
+	if [ $found -eq 0 ]
+	then
+		echo "No known VCS found: not supported?" >&2
+		exit 1
+	fi
+
+	echo $vcs
+}
+
+find_common_applied_files()
+{
+	# We can find all the files that are touched by some patch not
+	# this one by listing all of the unique files touched by the other
+	# patches, concatenating with all of the unique files touched by
+	# this patch, and finding duplicates.
+	local patch=$1
+	(
+		for other_patch in $(applied_patches)
+		do
+			if [ "$other_patch" != "$patch" ]
+			then
+				files_in_patch $other_patch
+			fi
+		done | sort | uniq ; \
+		files_in_patch $patch | sort | uniq
+	) | sort | uniq -d
+}
+
+commit_patch()
+{
+	# Get the patch file
+	local patch=$1
+	local patch_file=$(patch_file_name $patch)
+
+	[ -e "$patch_file" ] || return 1
+
+	# Verify that this patch is applied
+	if ! is_applied "$patch"
+	then
+		quilt push "$patch"
+	fi
+
+	# Verify that the list of files in this patch is disjoint from the
+	# set of files in all the other currently-applied patches.
+	common_files=$(find_common_applied_files "$patch")
+	if [ -n "$common_files" ]
+	then
+		echo "Patch $patch is not independent of other applied patches." >&2
+		echo "Common files are:" >&2
+		echo $common_files >&2
+		return 1
+	fi
+
+	# Get the list of files to modify and check that they're all in our VCS
+	for file in $(files_in_patch $patch | all_paths | sort | uniq)
+	do
+		case "$use_vcs" in
+			null|forget)
+				echo "Adding file $file"
+				;;
+			svn)
+				if ! svn add -q $file
+				then
+					echo "Failed to add $file to svn control" >&2
+					return 1
+				fi
+				;;
+			git)
+				;;
+			hg)
+				;;
+			*)
+				echo "VCS '$vcs' not known" >&2
+				return 1
+				;;
+		esac
+	done
+
+	# Check in the changes
+	case "$use_vcs" in
+		null|forget)
+			echo "Committing: message is:"
+			cat_file "$patch_file" | patch_header
+			;;
+		svn)
+			if ! cat_file "$patch_file" \
+				| patch_header \
+				| svn ci -F - $(files_in_patch $patch)
+			then
+				return $?
+			fi
+			;;
+		git)
+			echo "git support not yet implemented" >&2
+			;;
+		hg)
+			echo "mercurial support not yet implemented" >&2
+			;;
+	esac
+
+	# Remove the patch from the patch stack
+	remove_from_db "$patch" || return 1
+	rm -rf $QUILT_PC/$patch/
+	rm -f $QUILT_PC/$patch~refresh
+	rename_in_series "$patch" "# $patch" || return 1
+}
+
+options=`getopt -o qvhs:A --long vcs:,applied -- "$@"`
+
+if [ $? -ne 0 ]
+then
+        usage
+fi
+
+eval set -- "$options"
+
+while true
+do
+  case "$1" in
+	  -q)
+		  opt_quiet=1
+		  shift ;;
+	  -v)
+		  opt_verbose=1
+		  shift ;;
+	  -s|--vcs)
+		  use_vcs=$2
+		  shift 2 ;;
+	  -A|--applied)
+		  opt_applied=1
+		  shift ;;
+	  -h)
+		  usage -h ;;
+	  --)
+		  shift
+		  break ;;
+  esac
+done
+
+if [ $# -gt 2 -o \( -n "$opt_all" -a $# -ne 0 \) ]
+then
+	usage
+fi
+
+if [ -z "$use_vcs" -o "$use_vcs" = "auto" ]
+then
+	use_vcs=$(detect_vcs)
+fi
+
+if [ $# -ge 1 ]
+then
+	if [ $opt_applied -eq 1 ]
+	then
+		usage
+	fi
+	if [ "$1" = "-" ]
+	then
+		start_at_patch=$(find_first_patch) || exit 1
+	elif [ "$1" = "=" ]
+	then
+		start_at_patch=$(find_top_patch) || exit 1
+	else
+		start_at_patch=$(find_patch "$1") || exit 1
+	fi
+
+	if [ $# -eq 2 ]
+	then
+		if [ "$2" = "-" ]
+		then
+			stop_at_patch=$(find_last_patch) || exit 1
+		else
+			stop_at_patch=$(find_patch "$2") || exit 1
+		fi
+	else
+		stop_at_patch=$(find_top_patch) || exit 1
+	fi
+else
+	start_at_patch=$(find_first_patch) || exit 1
+	if [ $opt_applied -eq 1 ]
+	then
+		stop_at_patch=$(find_top_patch) || exit 1
+	else
+		stop_at_patch=$start_at_patch
+	fi
+fi
+
+[ -n "$opt_quiet" ] && silent=-s
+[ -z "$opt_verbose" ] && silent_unless_verbose=-s
+
+echo "Patches from $start_at_patch to $stop_at_patch"
+
+# Get the list of patches to apply (including current)
+patches=$(list_patch_range "$start_at_patch" "$stop_at_patch")
+echo $patches
+for patch in $patches
+do
+	[ -n "$opt_verbose" ] && echo "Processing patch $patch"
+	commit_patch "$patch" || exit 1
+done
+
+### Local Variables:
+### mode: shell-script
+### End:
+# vim:filetype=sh
