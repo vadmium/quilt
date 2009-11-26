@@ -427,6 +427,36 @@ patch_after()
 	[ -n "$patch" ] && echo "$patch"
 }
 
+list_patch_range()
+{
+	local first_patch="$1" last_patch="$2"
+
+	if [ -n "$first_patch" ]
+	then
+		if [ -n "$last_patch" ]
+		then
+			set -- $(patches_before "$last_patch") "$last_patch"
+			while [ $# -ne 0 ]
+			do
+				[ "$1" = "$first_patch" ] && break
+				shift
+			done
+			if [ $# -eq 0 ]
+			then
+				printf $"Patch %s not applied before patch %s\n" \
+					"$(print_patch $first_patch)" \
+					"$(print_patch $last_patch)" >&2
+				return 1
+			fi
+			echo "$@"
+		else
+			echo "$first_patch" $(patches_after "$first_patch")
+		fi
+	else
+		cat_series
+	fi
+}
+
 # List all patches that have been applied on top of patch $1
 patches_on_top_of()
 {
