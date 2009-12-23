@@ -24,8 +24,7 @@ usage()
 	then
 		printf $"
 Remove the specified or topmost patch from the series file.  If the
-patch is applied, quilt will attempt to remove it first. (Only the
-topmost patch can be removed right now.)
+patch is applied, quilt will attempt to unapply it first.
 
 -n	Delete the next patch after topmost, rather than the specified
 	or topmost patch.
@@ -48,6 +47,26 @@ topmost patch can be removed right now.)
 		exit 1
 	fi
 }
+
+find_common_applied_files()
+{
+	# We can find all the files that are touched by some patch not
+	# this one by listing all of the unique files touched by the other
+	# patches, concatenating with all of the unique files touched by
+	# this patch, and finding duplicates.
+	local patch=$1
+	(
+		for other_patch in $(applied_patches)
+		do
+			if [ "$other_patch" != "$patch" ]
+			then
+				files_in_patch $other_patch
+			fi
+		done | sort | uniq ; \
+		files_in_patch $patch | sort | uniq
+	) | sort | uniq -d
+}
+
 
 unset opt_pop
 
@@ -107,18 +126,25 @@ then
 	find_top_patch > /dev/null
 	exit 1
 fi
-if is_applied "$patch"; then
-	if [ "$patch" != "$(top_patch)" ]
-	then
-		printf $"Patch %s is currently applied\n" \
-		       "$(print_patch "$patch")" >&2
-		exit 1
-	fi
-	if ! quilt_command pop -q $opt_pop
-	then
-		exit 1
-	fi
+
+# Verify that the list of files in this patch is disjoint from the
+# set of files in all the other currently-applied patches.
+common_files=$(find_common_applied_files "$patch")
+if [ -n "$common_files" ]
+then
+	echo "Patch $patch is not independent of other applied patches." >&2
+	echo "Common files are:" >&2
+	echo $common_files >&2
+	exit 1
 fi
+
+printf $"Removing patch %s\n" "$(print_patch $patch)"
+$QUILT_LIB/backup-files $silent -r -t -B $QUILT_PC/$patch/ -
+
+# Remove the patch from the patch stack
+remove_from_db "$patch" || return 1
+rm -rf $QUILT_PC/$patch/
+rm -f $QUILT_PC/$patch~refresh
 
 if remove_from_series "$patch"
 then
