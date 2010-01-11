@@ -217,7 +217,7 @@ commit_patch()
 	rename_in_series "$patch" "# $patch" || return 1
 }
 
-options=`getopt -o qvhs:A --long vcs:,applied -- "$@"`
+options=`getopt -o qvhs:A --long vcs:,applied,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -241,7 +241,7 @@ do
 	  -A|--applied)
 		  opt_applied=1
 		  shift ;;
-	  -h)
+	  -h|--help)
 		  usage -h ;;
 	  --)
 		  shift
