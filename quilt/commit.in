@@ -41,6 +41,8 @@ current patch.  [to-patch] may be - for the last patch on the stack.
 
 -v	Verbose operation.
 
+-n	Dry run.
+
 -s, --vcs={auto,svn,hg,git,null,forget}
 	Use the given version control system. null and forget are
 	equivalent, and discard the patch from quilt, keeping the changes.
@@ -154,7 +156,7 @@ commit_patch()
 	# Verify that this patch is applied
 	if ! is_applied "$patch"
 	then
-		quilt push "$patch"
+		$DRYRUN quilt push "$patch"
 	fi
 
 	# Verify that the list of files in this patch is disjoint from the
@@ -176,7 +178,7 @@ commit_patch()
 				echo "Adding file $file"
 				;;
 			svn)
-				if ! svn add -q $file
+				if ! $DRYRUN svn add -q $file
 				then
 					echo "Failed to add $file to svn control" >&2
 					return 1
@@ -203,7 +205,7 @@ commit_patch()
 			# Would be nice to use svn ci -F - (and pipe to
 			# stdin) but my version (1.5.1) refuses to do this
 			msg="$(cat_file "$patch_file" | patch_header)"
-			if ! svn ci -m "$msg" $(files_in_patch $patch)
+			if ! $DRYRUN svn ci -m "$msg" $(files_in_patch $patch)
 			then
 				return $?
 			fi
@@ -217,13 +219,13 @@ commit_patch()
 	esac
 
 	# Remove the patch from the patch stack
-	remove_from_db "$patch" || return 1
-	rm -rf $QUILT_PC/$patch/
-	rm -f $QUILT_PC/$patch~refresh
-	rename_in_series "$patch" "# $patch" || return 1
+	$DRYRUN remove_from_db "$patch" || return 1
+	$DRYRUN rm -rf $QUILT_PC/$patch/
+	$DRYRUN rm -f $QUILT_PC/$patch~refresh
+	$DRYRUN rename_in_series "$patch" "# $patch" || return 1
 }
 
-options=`getopt -o qvhs:A --long vcs:,applied,help -- "$@"`
+options=`getopt -o qvnhs:A --long vcs:,applied,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -231,6 +233,7 @@ then
 fi
 
 opt_applied=""
+DRYRUN=""
 
 eval set -- "$options"
 
@@ -242,6 +245,9 @@ do
 		  shift ;;
 	  -v)
 		  opt_verbose=1
+		  shift ;;
+	  -n)
+		  DRYRUN=echo
 		  shift ;;
 	  -s|--vcs)
 		  use_vcs=$2
