@@ -29,8 +29,8 @@ Commit patches to a version control system.  Without options, the
 current patch in the series file is applied, and then removed from the
 series.
 
-If neither [from-patch] nor [to-patch] is specified, commit the first
-patch on the stack.  If [from-patch] is specified, commit from the
+If neither [from-patch] nor [to-patch] is specified, commit the current
+patch only.  If [from-patch] is specified, commit from the
 given patch to the current one.  If [to-patch] is specified, commit
 all patches from [from-patch] to [to-patch] inclusive.
 
@@ -300,14 +300,13 @@ then
 	else
 		stop_at_patch=$(find_top_patch) || exit 1
 	fi
-else
+elif [ -n "$opt_applied" ]
+then
 	start_at_patch=$(find_first_patch) || exit 1
-	if [ -n "$opt_applied" ]
-	then
-		stop_at_patch=$(find_top_patch) || exit 1
-	else
-		stop_at_patch=$start_at_patch
-	fi
+	stop_at_patch=$(find_top_patch) || exit 1
+else
+	start_at_patch=$(find_top_patch) || exit 1
+	stop_at_patch=$start_at_patch
 fi
 
 [ -n "$opt_quiet" ] && silent=-s
