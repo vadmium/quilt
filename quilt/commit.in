@@ -29,7 +29,7 @@ Commit patches to a version control system.  Without options, the
 current patch in the series file is applied, and then removed from the
 series.
 
-If neither [from-patch] nor [to-patch] is specified, commit the bottom
+If neither [from-patch] nor [to-patch] is specified, commit the first
 patch on the stack.  If [from-patch] is specified, commit from the
 given patch to the current one.  If [to-patch] is specified, commit
 all patches from [from-patch] to [to-patch] inclusive.
@@ -47,6 +47,10 @@ current patch.  [to-patch] may be - for the last patch on the stack.
 
 -A, --applied
 	Commit all applied patches.  Equivalent to a range of - =
+	But it doesn't mention using \"=\" for \"to-patch\"? And code ignores
+	\"-A\" if patch names are given. And \$opt_all is never defined.
+
+TODO: don't commit with a null message (provide force option to override)
 "
 		exit 0
 	else
@@ -56,6 +60,7 @@ current patch.  [to-patch] may be - for the last patch on the stack.
 
 interrupt()
 {
+	# TODO: is the rollback_patch function really there? Seems only to be in push.in
 	rollback_patch $1
 	printf $"Interrupted by user; patch %s was not applied.\n" \
 	       "$(print_patch $patch)" >&2
@@ -195,9 +200,10 @@ commit_patch()
 			cat_file "$patch_file" | patch_header
 			;;
 		svn)
-			if ! cat_file "$patch_file" \
-				| patch_header \
-				| svn ci -F - $(files_in_patch $patch)
+			# Would be nice to use svn ci -F - (and pipe to
+			# stdin) but my version (1.5.1) refuses to do this
+			msg="$(cat_file "$patch_file" | patch_header)"
+			if ! svn ci -m "$msg" $(files_in_patch $patch)
 			then
 				return $?
 			fi
@@ -223,6 +229,8 @@ if [ $? -ne 0 ]
 then
         usage
 fi
+
+opt_applied=""
 
 eval set -- "$options"
 
@@ -261,7 +269,7 @@ fi
 
 if [ $# -ge 1 ]
 then
-	if [ $opt_applied -eq 1 ]
+	if [ -n "$opt_applied" ]
 	then
 		usage
 	fi
@@ -288,7 +296,7 @@ then
 	fi
 else
 	start_at_patch=$(find_first_patch) || exit 1
-	if [ $opt_applied -eq 1 ]
+	if [ -n "$opt_applied" ]
 	then
 		stop_at_patch=$(find_top_patch) || exit 1
 	else
