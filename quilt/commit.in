@@ -51,6 +51,9 @@ series.
 	Commit all applied patches.  Equivalent to a range of - =
 	But it doesn't mention using \"=\" for \"to-patch\"?
 
+-R	Always verify if the patch is refreshed; don't rely on timestamp
+	checks.
+
 TODO: don't commit with a null message (provide force option to override)
 "
 		exit 0
@@ -158,6 +161,8 @@ commit_patch()
 		$DRYRUN quilt push "$patch"
 	fi
 
+	check_for_pending_changes "$patch" "$check_proper" || return 1
+	
 	# Verify that the list of files in this patch is disjoint from the
 	# set of files in all the other currently-applied patches.
 	common_files=$(find_common_applied_files "$patch")
@@ -260,6 +265,9 @@ do
 		  shift 2 ;;
 	  -A|--applied)
 		  opt_applied=1
+		  shift ;;
+	  -R)
+		  check_proper=1
 		  shift ;;
 	  -h|--help)
 		  usage -h ;;
