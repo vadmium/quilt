@@ -145,10 +145,19 @@ remove_patch()
 	local patch=$1 status=0
 
 	trap "status=1" SIGINT
-	if [ -z "$opt_force" ] && \
-	   ( [ -n "$opt_remove" ] || files_may_have_changed $patch )
+	if [ -z "$opt_force" ]
 	then
-		check_for_pending_changes $patch || status=1
+		if ! patch_in_series "$patch"
+		then
+			printf \
+$"Patch %s missing from series! (force pop with -f)\n" \
+				"$(print_patch "$patch")" >&2
+			status=1
+		elif ( [ -n "$opt_remove" ] ||
+			files_may_have_changed $patch )
+		then
+			check_for_pending_changes $patch || status=1
+		fi
 	fi
 
 	if [ $status -eq 0 ]
