@@ -86,7 +86,20 @@ files_may_have_changed()
 # and report any pending changes.
 check_for_pending_changes()
 {
-	local patch=$1
+	local patch="$1" properly="$2"
+	
+	if [ -e "$QUILT_PC/$patch~refresh" ]
+	then
+		printf $"Patch %s needs to be refreshed first.\n" \
+		       "$(print_patch $patch)" >&2
+		return 1
+	fi
+	
+	if [ -z "$properly" ] && ! files_may_have_changed "$patch"
+	then
+		return 0
+	fi
+	
 	local patch_file=$(patch_file_name $patch)
 	local workdir=$(gen_tempfile -d quilt) status=0
 
@@ -153,10 +166,9 @@ remove_patch()
 $"Patch %s missing from series! (force pop with -f)\n" \
 				"$(print_patch "$patch")" >&2
 			status=1
-		elif ( [ -n "$opt_remove" ] ||
-			files_may_have_changed $patch )
-		then
-			check_for_pending_changes $patch || status=1
+		else
+			check_for_pending_changes "$patch" "$opt_remove" ||
+				status=1
 		fi
 	fi
 
@@ -237,14 +249,6 @@ fi
 
 [ -n "$opt_quiet" ] && silent=-s
 [ -z "$opt_verbose" ] && silent_unless_verbose=-s
-
-top=$(top_patch)
-if [ -n "$top" -a -e $QUILT_PC/$top~refresh -a -z "$opt_force" ]
-then
-	printf $"Patch %s needs to be refreshed first.\n" \
-	       "$(print_patch $top)" >&2
-	exit 1
-fi
 
 if ! patches=$(list_patches) 2>&1
 then
