@@ -270,30 +270,6 @@ have GNU diff then you can supply its path with the '--with-diff=' option.
 fi
 
 
-# Sun's patch, and others, do not work because GNU patch options are used.
-AC_MSG_CHECKING([the version of $PATCH])
-if $PATCH --version 2> /dev/null | grep GNU >/dev/null; then
-  set -- `$PATCH --version 2> /dev/null`
-  patch_version=$2
-  AC_MSG_RESULT($patch_version)
-  saved_IFS=$IFS; IFS='.'
-  set -- $patch_version
-  IFS=$saved_IFS
-  set -- `echo $1 | $TR -cd 0-9` `echo $2 | $TR -cd 0-9`
-  if test 0$1 -lt 2 || test 0$1 -eq 2 -a 0$2 -lt 4 ; then
-    patch_version=
-  fi
-else
-  AC_MSG_RESULT(no GNU patch)
-fi
-if test -z "$patch_version" ; then
-  AC_MSG_ERROR([
-$PACKAGE_NAME requires at least version 2.4 of GNU patch. You can download a
-current version of patch from ftp.gnu.org, or if you already have GNU patch
-then you can supply its path with the '--with-patch=' option.
-])
-fi
-
 QUILT_COMPAT_PROG_PATH(FIND, find)
 
 AC_MSG_CHECKING([whether $FIND -path works])
