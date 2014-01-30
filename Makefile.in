@@ -14,6 +14,7 @@ mandir :=	@mandir@
 localedir :=	$(datadir)/locale
 emacsdir :=	$(datadir)/emacs/site-lisp
 etcdir :=	$(subst /usr/etc,/etc,$(prefix)/etc)
+BINDIR_UP = $(shell echo $(bindir) | sed -e 's|/[^/]\+|/..|g')
 
 INSTALL :=	@INSTALL@
 POD2MAN :=	@POD2MAN@
@@ -21,8 +22,9 @@ COLUMN :=	@COLUMN@
 GETOPT :=	@GETOPT@
 CP :=		@CP@
 DATE :=		@DATE@
-PERL :=		@PERL@
+PERL_SHEBANG := @PERL_SHEBANG@
 BASH :=		@BASH@
+BASH_SHEBANG := @BASH_SHEBANG@
 GREP :=		@GREP@
 TAIL :=		@TAIL@
 TR :=		@TR@
@@ -174,9 +176,11 @@ po/quilt.pot: $(filter-out debian/control.in doc/quilt.1.in		\
 			   		  $(wildcard */*/*.in))
 	rm -f po/quilt.pot; touch po/quilt.pot
 	for file in $+ ; do						\
-	  if test -n "`$(SED) -ne '1{ /@BASH''@/p }' $$file`"; then	\
+	  if test -n "`$(SED) -ne '1{ /@BASH_SHEBANG''@/p; }' $$file`"; \
+	  then \
 	    $(BASH) --dump-po-strings $$file ;				\
-	  elif test -n "`$(SED) -ne '1{ /@PERL''@/p }' $$file`"; then	\
+	  elif test -n "`$(SED) -ne '1{ /@PERL_SHEBANG''@/p; }' $$file`"; \
+	  then \
 	    $(XGETTEXT) --from-code=UTF-8 --omit-header --language=Perl	\
 			--keyword=_ -o - $$file;			\
 	  else								\
@@ -260,13 +264,14 @@ $(patsubst %.in,%,$(wildcard bin/*.in quilt/*.in quilt/scripts/*.in)) :: Makefil
 	@echo "$< -> $@" >&2
 	@$(SED) -e 's:@QUILT_LIB''@:$(libdir)/$(PACKAGE):g'		\
 		-e 's:@QUILT_DIR''@:$(datadir)/$(PACKAGE):g'		\
-		-e 's:@PERL''@:$(PERL):g'				\
-		-e 's:@BASH''@:$(BASH):g'				\
+		-e 's:@PERL_SHEBANG''@:$(PERL_SHEBANG):g' \
+		-e 's:@BASH_SHEBANG''@:$(BASH_SHEBANG):g' \
 		-e 's:@PATCH''@:$(PATCH):g'				\
 		-e 's:@VERSION''@:$(VERSION):g'				\
 		-e 's:@RELEASE''@:$(RELEASE):g'				\
 		-e 's:@LOCALEDIR''@:$(localedir):g'			\
 		-e 's:@DOCSUBDIR''@:$(docdir)/$(PACKAGE)-$(VERSION):g'	\
+		-e 's:@BINDIR_UP''@:$(BINDIR_UP):g'	\
 		$< > $@
 	@$(if $(filter-out $<,$(NON_EXEC_IN)),chmod +x $@)
 
@@ -293,7 +298,8 @@ compat :: $(COMPAT)
 #   Usage: $(call VIRTUAL_SYMLINK, source, target)
 define VIRTUAL_SYMLINK
 	@echo "Generating $(strip $(1)) wrapper" >&2;
-	@printf "#!%s\nexec %s "'"$$@"'"\n" $(BASH) $(strip $(1)) > $(2);
+	@printf "#!%s\nexec %s "'"$$@"'"\n" $(BASH_SHEBANG) $(strip $(1)) > \
+		$(2);
 endef
 
 # Rule to create compat/<binary> for each binary in $(COMPAT_SYMLINKS)

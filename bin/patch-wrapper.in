@@ -1,4 +1,4 @@
-#! @BASH@
+#! @BASH_SHEBANG@
 
 # This is a wrapper to GNU patch that recognizes the most common
 # options and mimics GNU patch's behavior and output, and creates the

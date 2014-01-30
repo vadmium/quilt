@@ -1,4 +1,5 @@
-#! @PERL@ -w
+#! @PERL_SHEBANG@
+use warnings;
 
 #  This script is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License version 2 as
@@ -100,13 +101,14 @@ foreach my $word (@words) {
 			$word = $1;
 			$param = $2;
 		}
-		my ($found) = grep(/^$word:?$/,@long_opts);
-		die "illegal option: $word" if !$found;
+		my ($found) = grep(/^$word:{0,2}$/,@long_opts);
+		die "illegal option: $word" if $word =~ /:$/ || !$found;
 		die "$word: unexpected paramater $param" if $found !~ /:$/ && $param ne '';
 
-		$need_param = $word if $found =~ /:$/ && $param eq '';
+		$need_param = $word if $found =~ /:$/ && $param eq '' &&
+			$found !~ /::$/;
 		push @options, "--$word";
-		push @options, '"'."$param".'"' if $param;
+		push @options, '"'."$param".'"' if $param || $found =~ /::$/;
 	}
 }
 

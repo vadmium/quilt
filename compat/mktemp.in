@@ -1,4 +1,4 @@
-#! @BASH@
+#! @BASH_SHEBANG@
 
 if [ x"$1" = x"-d" ]
 then

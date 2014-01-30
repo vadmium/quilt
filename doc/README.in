@@ -4,6 +4,12 @@ The usual tasks like applying, refreshing and reversing are supported.
 Please see the paper "How To Survive With Many Patches /or/
 Introduction to Quilt" for an introduction.
 
+Quilt requires at least version 2.4 of GNU Patch. You can download a
+current version of patch from ftp.gnu.org, or if you already have GNU Patch
+then you can supply its path with the "--with-patch=" option to the
+"configure" script. Sun's Patch, and others, do not work because GNU Patch
+options are used.
+
 
 Command reference
 =================

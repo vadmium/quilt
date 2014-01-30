@@ -1,4 +1,4 @@
-#! @BASH@
+#! @BASH_SHEBANG@
 
 #  This script is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License version 2 as
@@ -6,10 +6,12 @@
 #
 #  See the COPYING and AUTHORS files for more details.
 
+BASE="$(dirname "$0")@BINDIR_UP@"
+
 export TEXTDOMAIN=quilt
 export TEXTDOMAINDIR=@LOCALEDIR@
 
-: ${QUILT_DIR=@QUILT_DIR@} ${QUILT_LIB=@QUILT_LIB@}
+: ${QUILT_DIR="$BASE@QUILT_DIR@"} ${QUILT_LIB="$BASE@QUILT_LIB@"}
 export QUILT_DIR QUILT_LIB
 
 if [ -z "$QUILTRC" ]
