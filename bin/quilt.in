@@ -14,14 +14,6 @@ export TEXTDOMAINDIR=@LOCALEDIR@
 : ${QUILT_DIR="$BASE@QUILT_DIR@"} ${QUILT_LIB="$BASE@QUILT_LIB@"}
 export QUILT_DIR QUILT_LIB
 
-if [ -z "$QUILTRC" ]
-then
-	for QUILTRC in $HOME/.quiltrc /etc/quilt.quiltrc; do
-		[ -e $QUILTRC ] && break
-	done
-	export QUILTRC
-fi
-
 # Support compatibility layer
 if [ -d $QUILT_DIR/compat ]
 then
@@ -46,11 +38,10 @@ Global options:
 	Runs the command in bash trace mode (-x). For internal debugging.
 
 --quiltrc file
-	Use the specified configuration file instead of ~/.quiltrc (or
-	/etc/quilt.quiltrc if ~/.quiltrc does not exist).  See the pdf
-	documentation for details about its possible contents.  The
-	special value \"-\" causes quilt not to read any configuration
-	file.
+	Use the specified configuration file instead of \"\$QUILTRC\", or
+	\"/etc/quilt.quiltrc\", \"~/.quiltrc\", and \".pc/quiltrc\".  See the
+	pdf documentation for details about its possible contents.  The
+	special value \"-\" causes quilt not to read any configuration file.
 
 --version
 	Print the version number and exit immediately."
@@ -89,11 +80,11 @@ do
 	# Use a resource file other than ~/.quiltrc
 	--quiltrc=*)
 		QUILTRC=${1#--quiltrc=}
-		[ "$QUILTRC" = - ] && unset QUILTRC ;;
+		if [ "$QUILTRC" = "-" ]; then QUILTRC=""; fi ;;
 	--quiltrc)
 		QUILTRC=$2
-		[ "$QUILTRC" = - ] && unset QUILTRC
-		shift ;;
+		shift
+		if [ "$QUILTRC" = "-" ]; then QUILTRC=""; fi ;;
 	# Trace execution of commands
 	--trace*)
 		BASH_OPTS="${BASH_OPTS:+$BASH_OPTS }-x"

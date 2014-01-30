@@ -53,11 +53,6 @@ LDFLAGS +=	@LDFLAGS@
 LIBS :=		@LIBS@
 EXEEXT :=	@EXEEXT@
 
-LIBOBJS :=	$(filter $(patsubst lib/%.c,lib/%.o,$(wildcard lib/*.c)), $(patsubst %,lib/%,@LIBOBJS@))
-ifneq ($(LIBOBJS),)
-CFLAGS += -Ilib
-endif
-
 COMPAT_SYMLINKS	:= @COMPAT_SYMLINKS@
 COMPAT_PROGRAMS	:= @COMPAT_PROGRAMS@
 
@@ -140,7 +135,9 @@ export QUILT_DIR QUILT_LIB QUILTRC
 
 all : configure quilt.spec scripts compat $(DOC:%=doc/%) $(MAN1) mofiles
 
-$(LIB:%=lib/%) :: $(LIBOBJS)
+# Make doesn't have a built-in rule to build .exe files
+$(LIB:%=lib/%) : %$(EXEEXT) : %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 ifeq ($(USE_NLS),yes)
 mofiles : $(LINGUAS:%=po/%.mo)
@@ -273,8 +270,6 @@ $(patsubst %.in,%,$(wildcard bin/*.in quilt/*.in quilt/scripts/*.in)) :: Makefil
 		-e 's:@BINDIR_UP''@:$(BINDIR_UP):g'	\
 		$< > $@
 	@$(if $(filter-out $<,$(NON_EXEC_IN)),chmod +x $@)
-
-lib/backup-files.o :: Makefile
 
 configure : configure.ac aclocal.m4
 	autoconf

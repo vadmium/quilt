@@ -32,16 +32,17 @@ fi
 unset CDPATH
 shopt -s dotglob
 
-if [ -e "$QUILTRC" ]
+if [ -z "${QUILTRC+set}" ]
 then
-	source "$QUILTRC"
-fi
-
-# Add default arguments for this command
-if [ -n "$QUILT_COMMAND" ]; then
-	args="QUILT_$(echo $QUILT_COMMAND | tr a-z A-Z)_ARGS"
-	eval set -- ${!args} \"\$@\"
-	unset args
+	if [ -e "/etc/quilt.quiltrc" ]
+	then
+		source "/etc/quilt.quiltrc"
+	fi
+	
+	if [ -e "$HOME/.quiltrc" ]
+	then
+		source "$HOME/.quiltrc"
+	fi
 fi
 
 # ========================================================
@@ -1089,10 +1090,10 @@ quilt_command()
 }
 
 #
-# If the working directory does not contain a $QUILT_PATCHES directory,
-# quilt searches for its base directory up the directory tree. If no
-# $QUILT_PATCHES directory exists, the quilt operations that create
-# patches will create $QUILT_PATCHES in the current working directory.
+# Search for a base directory up the directory tree. The base directory must
+# contain the $QUILT_PC directory. If no such base
+# directory is found, the $QUILT_PC directory will be
+# created in the current working directory.
 #
 # When quilt is invoked from a directory below the base directory, it
 # changes into the base directory, and sets $SUBDIR to the relative
@@ -1102,14 +1103,14 @@ quilt_command()
 # drivers/net/.
 
 unset SUBDIR SUBDIR_DOWN
-if ! [ -d "$QUILT_PATCHES" ]
+if ! [ -d "$QUILT_PC" ]
 then
     basedir=$PWD
     while [ -n "$basedir" ]
     do
 	basedir=${basedir%/*}
 	down=$down../
-	if [ -d "$basedir/$QUILT_PATCHES" ]
+	if [ -d "$basedir/$QUILT_PC" ]
 	then
 	    SUBDIR="${PWD#$basedir/}/"
 	    SUBDIR_DOWN=$down
@@ -1122,6 +1123,19 @@ then
 	fi
     done
     unset basedir down
+fi
+
+: "${QUILTRC=$QUILT_PC/quiltrc}"
+if [ -e "$QUILTRC" ]
+then
+	source "$QUILTRC"
+fi
+
+# Add default arguments for this command
+if [ -n "$QUILT_COMMAND" ]; then
+	args="QUILT_$(echo $QUILT_COMMAND | tr a-z A-Z)_ARGS"
+	eval set -- ${!args} \"\$@\"
+	unset args
 fi
 
 : ${QUILT_SERIES:=series}
