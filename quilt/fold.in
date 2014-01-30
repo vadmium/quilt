@@ -46,7 +46,7 @@ defaults to 1).
 	fi
 }
 
-options=`getopt -o Rp:qfh -- "$@"`
+options=`getopt -o Rp:qfh --long help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -70,7 +70,7 @@ do
 	-q)
 		opt_quiet=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift

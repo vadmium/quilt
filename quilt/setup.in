@@ -91,7 +91,7 @@ Initializes a source tree from an rpm spec file or a quilt series file.
 	fi
 }
 
-options=`getopt -o d:vh --long sourcedir: -- "$@"`
+options=`getopt -o d:vh --long sourcedir:,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -109,7 +109,7 @@ do
 	-d)
 		prefix=${2%/}/
 		shift 2 ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	-v)
 		verbose=-v

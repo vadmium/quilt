@@ -1,12 +1,11 @@
-autom4te.cache/
+autom4te.cache
 build-stamp
 config.log
 config.status
-configure
 configure-stamp
 Makefile
-quilt.spec
 README
+quilt-*.tar.gz
 quilt-*.tar.bz2
 
 bin/guards

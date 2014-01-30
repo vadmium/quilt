@@ -101,10 +101,14 @@ references_header() {
 	then
 		in_reply_to=$(formail -x In-Reply-To: < "$message")
 		in_reply_to=${in_reply_to# }
-		if [ -n "$in_reply_to" ] &&
-		   ! [[ "$in_reply_to" =~ "@.*@" ]]
+		if [ -n "$in_reply_to" ]
 		then
-			references=$in_reply_to
+			case "$in_reply_to" in
+			*@*@*)
+				;;
+			*)	references=$in_reply_to
+				;;
+			esac
 		fi
 	fi
 	if [ -z "$references" ]
@@ -157,7 +161,7 @@ join_lines() {
 
 options=`getopt -o m:h --long from:,to:,cc:,bcc:,subject: \
 		       --long send,mbox:,charset:,sender: \
-		       --long prefix:,reply-to:,signature: -- "$@"`
+		       --long prefix:,reply-to:,signature:,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -219,7 +223,7 @@ do
 			opt_signature=$(< "$2")
 		fi
 		shift 2 ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--)
 		shift

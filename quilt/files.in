@@ -43,7 +43,7 @@ Print the list of files that the topmost or specified patch changes.
 	fi
 }
 
-options=`getopt -o vhal --long combine: -- "$@"`
+options=`getopt -o vhal --long combine:,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -64,7 +64,7 @@ do
 	-l)
 		opt_labels=1
 		shift ;;
-	-h)
+	-h|--help)
 		usage -h ;;
 	--combine)
 		opt_all=1
