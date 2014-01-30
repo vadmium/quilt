@@ -1,7 +1,5 @@
-	$ rm -rf d
-	$ mkdir -p d/patches
-	$ cd d
-	
+	$ mkdir patches
+
 	$ echo a > a
 	$ echo b > b
 	$ diff -u a b > patches/patch
@@ -35,6 +33,3 @@
 	> Applying patch patches/patch
 	> 1 out of 1 hunk FAILED
 	> Patch patches/patch can be reverse-applied
-
-	$ cd ..
-	$ rm -rf d

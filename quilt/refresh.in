@@ -154,12 +154,18 @@ QUILT_DIFF_OPTS="$QUILT_DIFF_OPTS $opt_format"
 
 patch=$(find_applied_patch "$1") || exit 1
 
+# Properly handle spaces in file names
+saved_IFS=$IFS
+IFS=$'\n'
+
 if [ -z "$opt_sort" ]
 then
 	files=( $(files_in_patch_ordered $patch) )
 else
 	files=( $(files_in_patch $patch | sort) )
 fi
+
+IFS=$saved_IFS
 
 if [ -n "$opt_fork" -a $# -ne 0 ]
 then
@@ -177,14 +183,14 @@ if [ -n "$opt_fork" ]; then
 		patch=$(next_filename "$patch")
 	fi
 	if [ -e "$(patch_file_name "$patch")" ]; then
-		printf $"Patch %s exists already\n" "$(print_patch $patch)" >&2
+		printf $"Patch %s exists already\n" "$(print_patch "$patch")" >&2
 		exit 1
 	fi
 fi
 
 if [ -z "$opt_strip_level" ]
 then
-	opt_strip_level=$(patch_strip_level $patch)
+	opt_strip_level=$(patch_strip_level "$patch")
 fi
 case "$opt_strip_level" in
 0 | 1)
@@ -214,25 +220,25 @@ do
 		old_file=$workdir/$file
 		new_file=$file
 	else
-		old_file=$(backup_file_name $patch $file)
-		next_patch=$(next_patch_for_file $patch $file)
+		old_file=$(backup_file_name "$patch" "$file")
+		next_patch=$(next_patch_for_file "$patch" "$file")
 		if [ -z "$next_patch" ]
 		then
 			new_file=$file
 		else
-			new_file=$(backup_file_name $next_patch $file)
+			new_file=$(backup_file_name "$next_patch" "$file")
 			files_were_shadowed=1
 		fi
 	fi
-	if ! diff_file $file $old_file $new_file
+	if ! diff_file "$file" "$old_file" "$new_file"
 	then
-		printf $"Diff failed, aborting\n" >&2
+		printf $"Diff failed on file '%s', aborting\n" "$new_file" >&2
 		die 1
 	fi
 
 	if [ -n "$files_were_shadowed" -a -z "$opt_force" ]
 	then
-		printf $"More recent patches modify files in patch %s. Enforce refresh with -f.\n" "$(print_patch $patch)" >&2
+		printf $"More recent patches modify files in patch %s. Enforce refresh with -f.\n" "$(print_patch "$patch")" >&2
 		die 1
 	fi
 
@@ -242,9 +248,9 @@ do
 	fi
 done >> $tmp_patch
 
-if ! [ -s $tmp_patch ]
+if [ -n "$opt_fork" -a ! -s $tmp_patch ]
 then
-	printf $"Nothing in patch %s\n" "$(print_patch $patch)" >&2
+	printf $"Nothing in patch %s\n" "$(print_patch "$patch")" >&2
 	die 1
 fi
 
@@ -264,7 +270,7 @@ else
 fi
 # FIXME: no stripping of non-topmost patch !!!
 
-patch_file=$(patch_file_name $patch)
+patch_file=$(patch_file_name "$patch")
 
 trap "" SIGINT
 
@@ -279,7 +285,7 @@ then
 	| awk '
 	    function print_diffstat(arr, i) {
 	      if (system("diffstat '"$QUILT_DIFFSTAT_OPTS \
-		      		     -p$num_strip_level \
+				     -p$num_strip_level \
 				     $tmp_patch | sed -e s:^:"'" prefix ":"))
 		exit 1
 	    }
@@ -297,7 +303,7 @@ then
 			{ print eat $0
 			  eat = "" }
 	    END		{ printf "%s", eat
-	    		  if (!diffstat_printed) {
+			  if (!diffstat_printed) {
 			    print "---"
 			    print_diffstat()
 			    print prefix
@@ -311,22 +317,22 @@ fi
 
 cat $tmp_patch >> $tmp_result
 
-mkdir -p $(dirname $patch_file)
+mkdir -p $(dirname "$patch_file")
 
-if [ -e $patch_file ] && \
-   diff -q $patch_file $tmp_result > /dev/null
+if [ -e "$patch_file" ] && \
+   diff -q "$patch_file" $tmp_result > /dev/null
 then
-	printf $"Patch %s is unchanged\n" "$(print_patch $patch)"
-elif ( [ -z "$QUILT_BACKUP" -o ! -e $patch_file ] || \
-       mv $patch_file $patch_file~ ) && \
-     cat_to_new_file $patch_file < $tmp_result
+	printf $"Patch %s is unchanged\n" "$(print_patch "$patch")"
+elif ( [ -z "$QUILT_BACKUP" -o ! -e "$patch_file" ] || \
+       mv "$patch_file" "$patch_file~" ) && \
+     cat_to_new_file "$patch_file" < $tmp_result
 then
 	if [ -n "$opt_fork" ]
 	then
 		if ! insert_in_series "$patch" "$old_patch_args"
 		then
 			printf $"Failed to insert patch %s into file series\n" \
-			       "$(print_patch $patch)" >&2
+			       "$(print_patch "$patch")" >&2
 			rm -f "$patch_file"
 			exit 1
 		fi
@@ -335,22 +341,27 @@ then
 		   ! echo "$patch" >> $QUILT_PC/applied-patches
 		then
 			printf $"Failed to create patch %s\n" \
-			       "$(print_patch $patch)" >&2
+			       "$(print_patch "$patch")" >&2
 			exit 1
 		fi
 		printf $"Fork of patch %s created as %s\n" \
-			"$(print_patch $old_patch)" \
-			"$(print_patch $patch)"
+			"$(print_patch "$old_patch")" \
+			"$(print_patch "$patch")"
 	else
-		printf $"Refreshed patch %s\n" "$(print_patch $patch)"
+		if [ -s $tmp_patch ]
+		then
+			printf $"Refreshed patch %s\n" "$(print_patch "$patch")"
+		else
+			printf $"Nothing in patch %s\n" "$(print_patch "$patch")"
+		fi
 	fi
-	touch $QUILT_PC/$patch/.timestamp
+	touch "$QUILT_PC/$patch/.timestamp"
 else
 	die 1
 fi
 
-rm -f $QUILT_PC/$patch~refresh
-if ! change_db_strip_level -p$num_strip_level $patch
+rm -f "$QUILT_PC/$patch~refresh"
+if ! change_db_strip_level -p$num_strip_level "$patch"
 then
 	die 1
 fi

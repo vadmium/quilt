@@ -1,7 +1,4 @@
-
-	$ rm -rf d
-	$ mkdir -p d/patches
-	$ cd d
+	$ mkdir patches
 
 	$ quilt new patch1.diff
 	> Patch %{P}patch1.diff is now on top
@@ -92,7 +89,7 @@
 
 	# test a few error cases
 
-        $ quilt import missing.diff
+	$ quilt import missing.diff
 	> Patch missing.diff does not exist
 
 	$ quilt import patches/patch1.diff
@@ -142,7 +139,7 @@
 	# make sure it accepts non-conflicting names
 	# a small presentation problem here
 
-        $ cp patches/patch1.diff t/patch1.patch
+	$ cp patches/patch1.diff t/patch1.patch
 	$ quilt import t/patch1.patch
 	> Importing patch t/patch1.patch (stored as patches/patch1.patch)
 
@@ -250,5 +247,11 @@
 	> patch1.diff
 	> patchR.diff
 
-	$ cd ..
-	$ rm -rf d
+# Also test importing when in a subdirectory
+	$ touch empty.patch
+	$ cd t
+	$ touch empty2.patch
+	$ quilt import ../empty.patch
+	> Importing patch ../empty.patch (stored as ../patches/empty.patch)
+	$ quilt import %{PWD}/empty2.patch
+	> Importing patch %{PWD}/empty2.patch (stored as ../patches/empty2.patch)

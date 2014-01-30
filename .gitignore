@@ -5,6 +5,7 @@ config.status
 configure-stamp
 Makefile
 README
+quilt.spec
 quilt-*.tar.gz
 quilt-*.tar.bz2
 
@@ -13,22 +14,21 @@ bin/guards.1
 bin/patch-wrapper
 bin/quilt
 
-debian/files
-debian/quilt
-debian/quilt.substvars
-
 doc/quilt.1
-doc/quilt.aux 
+doc/quilt.aux
 doc/quilt.dvi
 doc/quilt.log
-doc/quilt.ps 
-doc/README 
-
-lib/backup-files
+doc/quilt.ps
+doc/quilt-rus.aux
+doc/quilt-rus.log
+doc/quilt-rus.pdf
+doc/README
+doc/reference
 
 po/*.mo
 
 quilt/*
+!quilt/scripts
 !quilt/*.in
 
 quilt/scripts/*

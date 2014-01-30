@@ -22,10 +22,32 @@ then
 	fi
 fi
 
-check_for_existing_files() {
-	local dir status=0
-	for dir in $(awk ' $1 == "patch" { print $2 }' $tmpfile | uniq)
+check_for_existing_directories() {
+	local tag dir last_dir arg status=0
+
+	while read tag dir arg
 	do
+		[ "$dir" != "." -a "$dir" != "$last_dir" ] || continue
+
+		if [ -e "$prefix$dir" ]
+		then
+			printf $"Directory %s exists\n" \
+			       "$prefix$dir" >&2
+			status=1
+		fi
+		last_dir=$dir
+	done < $tmpfile
+
+	return $status
+}
+
+check_for_existing_files() {
+	local tag dir last_dir arg status=0
+
+	while read tag dir arg
+	do
+		[ "$tag" = "patch" -a "$dir" != "$last_dir" ] || continue
+
 		if [ -e "$prefix$dir/$QUILT_PATCHES" ]
 		then
 			printf $"Directory %s exists\n" \
@@ -38,7 +60,9 @@ check_for_existing_files() {
 			       "$prefix$dir/$QUILT_SERIES" >&2
 			status=1
 		fi
-	done
+		last_dir=$dir
+	done < $tmpfile
+
 	return $status
 }
 
@@ -56,7 +80,7 @@ create_symlink() {
 			 -e 's:/[^/]+/\.\.(/|$):\1:g' \
 			 -e 'tagain')" \
 	       "$(echo "$PWD/$link" | \
-	          sed -r -e 's://:/:g' \
+		  sed -r -e 's://:/:g' \
 			 -e ':again' \
 			 -e 's:/[^/]+/\.\.(/|$):\1:g' \
 			 -e 'tagain')"
@@ -72,7 +96,7 @@ create_symlink() {
 
 usage()
 {
-	printf $"Usage: quilt setup [-d path-prefix] [-v] [--sourcedir dir] {specfile|seriesfile}\n"
+	printf $"Usage: quilt setup [-d path-prefix] [-v] [--sourcedir dir] [--fuzz=N] {specfile|seriesfile}\n"
 	if [ x$1 = x-h ]
 	then
 		printf $"
@@ -84,6 +108,9 @@ Initializes a source tree from an rpm spec file or a quilt series file.
 	Directory that contains the package sources. Defaults to \`.'.
 
 -v	Verbose debug output.
+
+--fuzz=N
+	Set the maximum fuzz factor (needs rpm 4.6 or later).
 "
 		exit 0
 	else
@@ -91,7 +118,7 @@ Initializes a source tree from an rpm spec file or a quilt series file.
 	fi
 }
 
-options=`getopt -o d:vh --long sourcedir:,help -- "$@"`
+options=`getopt -o d:vh --long sourcedir:,fuzz:,help -- "$@"`
 
 if [ $? -ne 0 ]
 then
@@ -117,6 +144,9 @@ do
 	--sourcedir)
 		sourcedir=${2%/}/
 		shift 2 ;;
+	--fuzz)
+		opt_fuzz="--fuzz $2"
+		shift 2 ;;
 	--)
 		shift
 		break ;;
@@ -131,13 +161,13 @@ fi
 [ -n "$sourcedir" ] && opt_sourcedir="--sourcedir $sourcedir"
 
 tmpfile=$(gen_tempfile)
-trap "rm -f $tmpfile" EXIT
+add_exit_handler "rm -f $tmpfile"
 
 case "$1" in
 *.spec)
 	spec_file=$1
 
-	if ! $QUILT_DIR/scripts/inspect $verbose $opt_sourcedir \
+	if ! $QUILT_DIR/scripts/inspect $verbose $opt_sourcedir $opt_fuzz \
 					"$spec_file" 2>&1 > $tmpfile
 	then
 		printf $"The %%prep section of %s failed; results may be incomplete\n" "$spec_file"
@@ -155,13 +185,27 @@ case "$1" in
 		case "$@" in
 		"# Sourcedir: "*)
 			shift 2
-			tar_dir="$@" ;;
+			tar_dir="$@"
+			tar_dir=${tar_dir// /\\ }
+			;;
 		"# Source: "*)
 			shift 2
-			echo "tar ${tar_dir:-.} $@" ;;
+			source="$@"
+			filetype="$(file -b "$source")"
+			case "$filetype" in
+			Zip*)
+				echo "unzip ${tar_dir:-.} ${source// /\\ }"
+				;;
+			*)
+				echo "tar ${tar_dir:-.} ${source// /\\ }"
+				;;
+			esac
+			;;
 		"# Patchdir: "*)
 			shift 2
-			patch_dir="$@" ;;
+			patch_dir="$@"
+			patch_dir=${patch_dir// /\\ }
+			;;
 		''|'#'*)
 			;;
 		*)
@@ -171,14 +215,15 @@ case "$1" in
 	;;
 esac
 
-check_for_existing_files || exit 1
+# Make sure that unpacking will not overwrite anything
+check_for_existing_directories || exit 1
 
 while read tag dir arg1 arg2
 do
 	case "$tag" in
 	tar)
 		tarball=$sourcedir$arg1
-		if [ ! -e $tarball ]
+		if [ ! -e "$tarball" ]
 		then
 			printf $"File %s not found\n" "$tarball" >&2
 			exit 1
@@ -188,20 +233,43 @@ do
 		cat_file "$tarball" \
 		| tar xf - -C "$prefix$dir"
 		;;
+	unzip)
+		tarball=$sourcedir$arg1
+		if [ ! -e "$tarball" ]
+		then
+			printf $"File %s not found\n" "$tarball" >&2
+			exit 1
+		fi
+		printf $"Unpacking archive %s\n" "$tarball"
+		mkdir -p "${prefix:-.}" "$prefix$dir"
+		unzip -qqo "$tarball" -d "$prefix$dir"
+		;;
 	esac
 done < $tmpfile
+
+if ! check_for_existing_files
+then
+	echo $"Trying alternative patches and series names..." >&2
+	QUILT_PATCHES=quilt_patches
+	QUILT_SERIES=quilt_series
+	check_for_existing_files || exit 1
+fi
 
 while read tag dir arg1 arg2
 do
 	case "$tag" in
-	tar)
+	tar|unzip)
 		tar_dir="$dir"
 		[ "$tar_dir" = . ] && tar_dir=
 		tar_file="$arg1"
 		;;
 	patch)
-		[ -e "$prefix$dir/$QUILT_PATCHES" ] \
-		|| create_symlink "$sourcedir" "$prefix$dir/$QUILT_PATCHES"
+		if [ ! -e "$prefix$dir/$QUILT_PATCHES" ]
+		then
+			create_symlink "$sourcedir" "$prefix$dir/$QUILT_PATCHES"
+			(cd "$prefix$dir" && create_db)
+		fi
+
 		if [ -n "$series_file" ]
 		then
 			[ -e "$prefix$dir/$QUILT_SERIES" ] \
